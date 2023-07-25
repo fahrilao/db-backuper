@@ -1,0 +1,13 @@
+FROM node:current-alpine3.18
+
+RUN apk add zip unzip
+
+RUN npm install -g typescript
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN yarn install
+
+COPY . .

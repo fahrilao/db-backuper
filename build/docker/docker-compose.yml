@@ -1,0 +1,23 @@
+version: "3.1"
+
+services:
+  dbbackup:
+    command: yarn start
+    build:
+      context: ../../
+      dockerfile: ./build/docker/dockerfile
+    environment:
+      - "DBHOST=db"
+      - "DBPORT=3306"
+      - "DBUSER=root"
+      - "DBPASS=himed"
+      - "DBNAME=lang_sertification"
+    volumes:
+      - ../../services/:/app/services
+      - ../../exports/:/app/exports
+    networks:
+      - himed_network
+
+networks:
+  himed_network:
+    external: true
