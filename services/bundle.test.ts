@@ -13,11 +13,10 @@ jest.mock("adm-zip", () =>
 
 describe("bundledToZip", () => {
   it("should call AdmZip with the correct parameters", async () => {
-    const fromFile = "source.txt"
-    const toFile = "destination.zip"
-    const res = await bundledToZip(fromFile, toFile)
+    const file = "source.txt"
+    const res = await bundledToZip(file)
 
-    expect(res).toEqual("success")
+    expect(res).toEqual(file + ".zip")
     expect(AdmZip).toHaveBeenCalledTimes(1)
   })
 })
