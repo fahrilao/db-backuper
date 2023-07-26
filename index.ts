@@ -3,6 +3,11 @@ import path from "path"
 import dayjs from "dayjs"
 import { backupMysql } from "./services/backup"
 import { bundledToZip } from "./services/bundle"
+import {
+  GoogleDrive,
+  GoogleServiceAccount,
+  GoogleServiceAccountInterface,
+} from "./third-party/google"
 
 const {
   DBHOST = "localhost",
@@ -11,12 +16,22 @@ const {
   DBPASS = "password",
   DBNAME = "anonymous",
   GOOGLE_SERVICE_ACCOUNT,
+  GOOGLE_FILE_SHARE_ID,
 } = process.env
 
 if (!GOOGLE_SERVICE_ACCOUNT) {
   console.error("Please provide a GOOGLE_SERVICE_ACCOUNT")
   process.exit(1)
 }
+
+if (!GOOGLE_FILE_SHARE_ID) {
+  console.error("Please provide a GOOGLE_FILE_SHARE_ID")
+  process.exit(1)
+}
+
+const gsa: GoogleServiceAccountInterface = JSON.parse(
+  atob(GOOGLE_SERVICE_ACCOUNT)
+)
 
 const locationDir = path.join(__dirname, "exports")
 
@@ -26,8 +41,26 @@ const filename = `${locationDir}/${currentTime}`
 backupMysql(filename, DBHOST, parseInt(DBPORT), DBUSER, DBPASS, DBNAME).then(
   async (filenameSql) => {
     try {
-      const fileZip = await bundledToZip(filenameSql)
-      console.log(`Success build to ${fileZip} file`)
+      const filenameZip = await bundledToZip(filenameSql)
+      console.log(`Success build to ${filenameZip} file`)
+
+      const google = new GoogleServiceAccount(
+        gsa.client_email,
+        gsa.private_key,
+        "https://www.googleapis.com/auth/drive"
+      )
+      const googleDrive = new GoogleDrive(google.client)
+
+      const result = await googleDrive.createFile(
+        fs.createReadStream(filenameZip),
+        currentTime + ".zip",
+        GOOGLE_FILE_SHARE_ID
+      )
+
+      fs.unlink(
+        filenameZip,
+        (err) => err && console.log("Can't delete zip data")
+      )
     } catch (err) {
       console.log(`Can't Bundle ${filenameSql} file`, err)
     } finally {
@@ -35,6 +68,8 @@ backupMysql(filename, DBHOST, parseInt(DBPORT), DBUSER, DBPASS, DBNAME).then(
         filenameSql,
         (err) => err && console.log("Can't delete temp data")
       )
+
+      console.log("The program was successfully runned")
     }
   }
 )

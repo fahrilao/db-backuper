@@ -6,12 +6,7 @@ services:
     build:
       context: ../../
       dockerfile: ./build/docker/dockerfile
-    environment:
-      - "DBHOST=db"
-      - "DBPORT=3306"
-      - "DBUSER=root"
-      - "DBPASS=himed"
-      - "DBNAME=lang_sertification"
+    env_file: variable.env
     volumes:
       - ../../services/:/app/services
       - ../../exports/:/app/exports

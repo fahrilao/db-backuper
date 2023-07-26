@@ -20,6 +20,7 @@
     "@types/adm-zip": "^0.5.0",
     "adm-zip": "^0.5.10",
     "dayjs": "^1.11.9",
+    "googleapis": "^122.0.0",
     "mysqldump": "^3.2.0"
   }
 }
