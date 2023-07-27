@@ -27,7 +27,8 @@ Insert the following variable into the file:
 - `DBNAME`: Database Name (default: "anonymous")
 - `GOOGLE_SERVICE_ACCOUNT`\*: Json of service account which encode by base64 encoded
 - `GOOGLE_FILE_SHARE_ID`\*: ID of sharing file destination
-- `CRON_HOUR`: What time that you want to run the backup every day (default: 10)
+- `CRON_HOUR`: What hour time that you want to run the backup every day (default: 10)
+- `CRON_MINUTE`: What minute time that you want to run the backup every day (default: 10)
 - `TIME_ZONE`: Timezone (default: "Asia/Jakarta")
 
 ### Install Project

@@ -20,6 +20,7 @@ const {
   GOOGLE_SERVICE_ACCOUNT,
   GOOGLE_FILE_SHARE_ID,
   CRON_HOUR = 10,
+  CRON_MINUTE = "*",
   TIME_ZONE = "Asia/Jakarta",
 } = process.env
 
@@ -32,11 +33,17 @@ if (!GOOGLE_FILE_SHARE_ID) {
   process.exit(1)
 }
 
+var dir = process.cwd() + "/" + "exports"
+
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir)
+}
+
 // ** Initialize
 const gsa: GoogleServiceAccountInterface = JSON.parse(
   atob(GOOGLE_SERVICE_ACCOUNT)
 )
-const locationDir = path.join(__dirname, "exports")
+const locationDir = path.join(process.cwd(), "exports")
 const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
 const filename = `${locationDir}/${currentTime}`
 
@@ -97,10 +104,10 @@ const run = async () => {
   console.log("The program has runned successfully!")
 }
 
-console.log("Running the program...")
+console.log(`Scheduling tasks at ${CRON_HOUR}:${CRON_MINUTE}`)
 
 cron
-  .schedule(`0 ${CRON_HOUR} * * *`, run, {
+  .schedule(`${CRON_MINUTE} ${CRON_HOUR} * * *`, run, {
     scheduled: true,
     timezone: TIME_ZONE,
   })

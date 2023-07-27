@@ -7,3 +7,9 @@ services:
       context: ../../
       dockerfile: ./build/docker/dockerfile
       target: builder
+    networks:
+      - backuper_network
+
+networks:
+  backuper_network:
+    external: true
