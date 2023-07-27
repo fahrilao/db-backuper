@@ -1,8 +1,8 @@
-FROM node:current-alpine3.18
+FROM node:current-alpine3.18 as builder
 
 RUN apk add zip unzip
 
-RUN npm install -g typescript
+RUN npm install -g typescript pkg
 
 WORKDIR /app
 
@@ -11,3 +11,7 @@ COPY package*.json ./
 RUN yarn install
 
 COPY . .
+
+RUN yarn build
+
+RUN pkg . --targets node18-alpine-x64 -o ./.bin/backuper

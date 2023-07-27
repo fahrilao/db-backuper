@@ -6,10 +6,8 @@ services:
     build:
       context: ../../
       dockerfile: ./build/docker/dockerfile
+      target: builder
     env_file: variable.env
-    volumes:
-      - ../../services/:/app/services
-      - ../../exports/:/app/exports
     networks:
       - himed_network
 

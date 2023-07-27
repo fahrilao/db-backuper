@@ -1,7 +1,6 @@
 import { google, drive_v3 } from "googleapis"
 import { JWT } from "google-auth-library"
-import fs from "fs"
-import path from "path"
+import * as fs from "fs"
 
 interface GoogleResponse {
   statusCode: number

@@ -1,5 +1,5 @@
-import fs from "fs"
-import path from "path"
+import * as fs from "fs"
+import * as path from "path"
 import dayjs from "dayjs"
 import { backupMysql } from "./services/backup"
 import { bundledToZip } from "./services/bundle"
@@ -41,7 +41,7 @@ const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
 const filename = `${locationDir}/${currentTime}`
 
 const run = async () => {
-  console.log("Command is running...")
+  console.log("Backuper is start working!")
   // ** Get an exports file
   let filenameSql: string
 
@@ -94,8 +94,10 @@ const run = async () => {
     throw err
   }
 
-  console.log("The program was runned successfully")
+  console.log("The program has runned successfully!")
 }
+
+console.log("Running the program...")
 
 cron
   .schedule(`0 ${CRON_HOUR} * * *`, run, {
