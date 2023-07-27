@@ -1,4 +1,4 @@
-FROM node:current-alpine3.18 as builder
+FROM node:18.17.0-alpine3.18 as builder
 
 RUN apk add zip unzip
 
@@ -15,3 +15,13 @@ COPY . .
 RUN yarn build
 
 RUN pkg . --targets node18-alpine-x64 -o ./.bin/backuper
+
+FROM alpine:3.18
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY --from=builder /app/.bin/backuper /usr/local/bin/backuper
+
+ENTRYPOINT ["backuper"]

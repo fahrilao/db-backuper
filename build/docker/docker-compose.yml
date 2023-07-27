@@ -2,15 +2,10 @@ version: "3.1"
 
 services:
   dbbackup:
-    command: yarn start
-    build:
-      context: ../../
-      dockerfile: ./build/docker/dockerfile
-      target: builder
     env_file: variable.env
     networks:
-      - himed_network
+      - backuper_network
 
 networks:
-  himed_network:
+  backuper_network:
     external: true
