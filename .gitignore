@@ -2,3 +2,4 @@
 /exports/*
 *.env
 *.js
+*.prod.*
