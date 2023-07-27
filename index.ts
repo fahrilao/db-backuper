@@ -5,7 +5,6 @@ import { backupMysql } from "./services/backup"
 import { bundledToZip } from "./services/bundle"
 import {
   GoogleDrive,
-  GoogleServiceAccount,
   GoogleServiceAccountInterface,
 } from "./third-party/google"
 
@@ -38,38 +37,47 @@ const locationDir = path.join(__dirname, "exports")
 const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
 const filename = `${locationDir}/${currentTime}`
 
-backupMysql(filename, DBHOST, parseInt(DBPORT), DBUSER, DBPASS, DBNAME).then(
-  async (filenameSql) => {
+backupMysql(filename, DBHOST, parseInt(DBPORT), DBUSER, DBPASS, DBNAME)
+  .then(async (filenameSql) => {
     try {
       const filenameZip = await bundledToZip(filenameSql)
       console.log(`Success build to ${filenameZip} file`)
-
-      const google = new GoogleServiceAccount(
-        gsa.client_email,
-        gsa.private_key,
-        "https://www.googleapis.com/auth/drive"
-      )
-      const googleDrive = new GoogleDrive(google.client)
-
-      const result = await googleDrive.createFile(
-        fs.createReadStream(filenameZip),
-        currentTime + ".zip",
-        GOOGLE_FILE_SHARE_ID
-      )
-
-      fs.unlink(
-        filenameZip,
-        (err) => err && console.log("Can't delete zip data")
-      )
-    } catch (err) {
-      console.log(`Can't Bundle ${filenameSql} file`, err)
-    } finally {
       fs.unlink(
         filenameSql,
         (err) => err && console.log("Can't delete temp data")
       )
 
-      console.log("The program was successfully runned")
+      return filenameZip
+    } catch (err) {
+      console.log(`Can't Bundle ${filenameSql} file`, err)
+      fs.unlink(
+        filenameSql,
+        (err) => err && console.log("Can't delete temp data")
+      )
+      throw err
     }
-  }
-)
+  })
+  .then(async (filenameZip) => {
+    const googleDrive = new GoogleDrive(gsa.client_email, gsa.private_key)
+
+    try {
+      await googleDrive.createFile(
+        fs.createReadStream(filenameZip),
+        currentTime + ".zip",
+        GOOGLE_FILE_SHARE_ID
+      )
+      fs.unlink(
+        filenameZip,
+        (err) => err && console.log("Can't delete zip data")
+      )
+    } catch (err) {
+      console.log(`Can't Upload ${filenameZip} file`)
+      fs.unlink(
+        filenameZip,
+        (err) => err && console.log("Can't delete zip data")
+      )
+      throw err
+    }
+
+    console.log("The program was runned successfully")
+  })

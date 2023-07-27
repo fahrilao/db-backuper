@@ -23,19 +23,15 @@ export interface GoogleServiceAccountInterface {
   universe_domain: string
 }
 
-export class GoogleServiceAccount {
+export class GoogleDrive {
   client: JWT
 
-  constructor(
-    client_email: string,
-    private_key: string,
-    scopes: string[] | string
-  ) {
+  constructor(client_email: string, private_key: string) {
     this.client = new google.auth.JWT(
       client_email,
       undefined,
       private_key,
-      scopes
+      "https://www.googleapis.com/auth/drive"
     )
     this.client.authorize(function (err) {
       if (err) {
@@ -45,10 +41,6 @@ export class GoogleServiceAccount {
       }
     })
   }
-}
-
-export class GoogleDrive {
-  constructor(private client: JWT) {}
 
   async createFile(
     filesource: fs.ReadStream,
