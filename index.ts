@@ -3,6 +3,7 @@ import path from "path"
 import dayjs from "dayjs"
 import { backupMysql } from "./services/backup"
 import { bundledToZip } from "./services/bundle"
+import cron from "node-cron"
 import {
   GoogleDrive,
   GoogleServiceAccountInterface,
@@ -18,6 +19,8 @@ const {
   PREFIX_FILENAME = "",
   GOOGLE_SERVICE_ACCOUNT,
   GOOGLE_FILE_SHARE_ID,
+  CRON_HOUR = 10,
+  TIME_ZONE = "Asia/Jakarta",
 } = process.env
 
 if (!GOOGLE_SERVICE_ACCOUNT) {
@@ -38,6 +41,7 @@ const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
 const filename = `${locationDir}/${currentTime}`
 
 const run = async () => {
+  console.log("Command is running...")
   // ** Get an exports file
   let filenameSql: string
 
@@ -93,4 +97,9 @@ const run = async () => {
   console.log("The program was runned successfully")
 }
 
-run()
+cron
+  .schedule(`0 ${CRON_HOUR} * * *`, run, {
+    scheduled: true,
+    timezone: TIME_ZONE,
+  })
+  .start()
