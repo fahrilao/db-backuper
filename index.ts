@@ -89,10 +89,10 @@ const run = async () => {
   // ** Upload to Google Drive
   const googleDrive = new GoogleDrive(gsa.client_email, gsa.private_key)
   try {
-    await googleDrive.createFile(
-      fs.createReadStream(filenameZip),
+    await googleDrive.resumable(
       `${PREFIX_FILENAME} ${currentTime}.zip`,
-      GOOGLE_FILE_SHARE_ID
+      filenameZip,
+      [GOOGLE_FILE_SHARE_ID]
     )
     fs.unlink(filenameZip, (err) => err && console.log("Can't delete zip data"))
   } catch (err) {

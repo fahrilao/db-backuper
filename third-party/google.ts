@@ -1,6 +1,7 @@
 import { google, drive_v3 } from "googleapis"
 import { JWT } from "google-auth-library"
 import * as fs from "fs"
+import axios from "axios"
 
 interface GoogleResponse {
   statusCode: number
@@ -90,5 +91,91 @@ export class GoogleDrive {
         }
       }
     )
+  }
+
+  private async initialResumable(
+    filename: string,
+    parents: string[]
+  ): Promise<string> {
+    const accessToken = await this.client.getAccessToken()
+    const res = await axios.post(
+      `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`,
+      {
+        name: filename,
+        mimeType: "application/zip",
+        parents,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    console.log("success initial the resumable", res.headers.location)
+
+    return res.headers.location
+  }
+
+  private async uploadResumable(
+    uploadURL: string,
+    filepath: string,
+    filesize: number,
+    startByte: number,
+    endByte?: number
+  ): Promise<void> {
+    const chunkSize = 256 * 1024
+    if (!endByte) {
+      endByte = chunkSize - 1
+    }
+    if (endByte > filesize) {
+      endByte = filesize - 1
+    }
+
+    console.log(`Upload bytes ${startByte}-${endByte} of ${filesize}`)
+
+    const chunk = fs.createReadStream(filepath, {
+      start: startByte,
+      end: endByte,
+    })
+
+    await axios
+      .put(uploadURL, chunk, {
+        headers: {
+          "Content-Length": endByte - startByte + 1,
+          "Content-Range": `bytes ${startByte}-${endByte}/${filesize}`,
+        },
+      })
+      .catch(async (error) => {
+        console.log(error)
+        if (error?.response?.status === 308) {
+          console.log(`Uploaded bytes ${startByte}-${endByte} of ${filesize}`)
+          // Server is requesting to continue the upload, adjust the range for the next chunk
+          const range = error.response.headers.range
+          const [nextStart, nextEnd] = range.split("-").map(Number)
+          startByte = nextEnd + 1
+          endByte = Math.min(startByte + chunkSize - 1, filesize - 1)
+          await this.uploadResumable(
+            uploadURL,
+            filepath,
+            filesize,
+            startByte,
+            endByte
+          )
+        } else {
+          // Handle other errors
+          console.error("Error uploading chunk:", error.message)
+          throw error
+        }
+      })
+  }
+
+  async resumable(filename: string, filepath: string, parents: string[]) {
+    const uploadURL = await this.initialResumable(filename, parents)
+    const filesize = fs.statSync(filepath).size
+    let startByte = 0
+
+    await this.uploadResumable(uploadURL, filepath, filesize, startByte)
   }
 }

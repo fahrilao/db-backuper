@@ -12,9 +12,9 @@ RUN yarn install
 
 COPY . .
 
-RUN yarn build
+# RUN yarn build
 
-RUN pkg . --targets node18-alpine-x64 -o ./.bin/backuper
+# RUN pkg . --targets node18-alpine-x64 -o ./.bin/backuper
 
 FROM alpine:3.18
 
