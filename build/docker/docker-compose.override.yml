@@ -8,8 +8,8 @@ services:
       dockerfile: ./build/docker/dockerfile
       target: builder
     networks:
-      - himed_network
+      - backuper_network
 
 networks:
-  himed_network:
+  backuper_network:
     external: true
