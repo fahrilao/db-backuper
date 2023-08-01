@@ -25,6 +25,7 @@ export interface GoogleServiceAccountInterface {
 
 export class GoogleDrive {
   client: JWT
+  authenticationTried = 0
 
   constructor(client_email: string, private_key: string) {
     this.client = new google.auth.JWT(
@@ -33,12 +34,25 @@ export class GoogleDrive {
       private_key,
       "https://www.googleapis.com/auth/drive"
     )
-    this.client.authorize(function (err) {
-      if (err) {
-        throw new Error(err.message)
-      } else {
-        console.log("Connection established with Google API")
-      }
+
+    this.authenticate()
+  }
+
+  async authenticate(): Promise<void> {
+    await new Promise((resolve, reject) => {
+      this.client.authorize(function (err) {
+        if (err) {
+          reject(err)
+        } else {
+          console.log("Connection established with Google API")
+          resolve(true)
+        }
+      })
+    }).catch((err) => {
+      this.authenticationTried++
+      console.log(err)
+      if (this.authenticationTried > 3) throw err
+      setTimeout(this.authenticate, 10000)
     })
   }
 

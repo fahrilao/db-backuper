@@ -22,6 +22,7 @@ const {
   CRON_HOUR = 10,
   CRON_MINUTE = "*",
   TIME_ZONE = "Asia/Jakarta",
+  ONCE = 0,
 } = process.env
 
 if (!GOOGLE_SERVICE_ACCOUNT) {
@@ -106,9 +107,11 @@ const run = async () => {
 
 console.log(`Scheduling tasks at ${CRON_HOUR}:${CRON_MINUTE}`)
 
-cron
-  .schedule(`${CRON_MINUTE} ${CRON_HOUR} * * *`, run, {
-    scheduled: true,
-    timezone: TIME_ZONE,
-  })
-  .start()
+if (ONCE) run()
+else
+  cron
+    .schedule(`${CRON_MINUTE} ${CRON_HOUR} * * *`, run, {
+      scheduled: true,
+      timezone: TIME_ZONE,
+    })
+    .start()
