@@ -7,6 +7,7 @@
   "devDependencies": {
     "@jest/globals": "^29.6.1",
     "@types/adm-zip": "^0.5.0",
+    "@types/archiver": "^5.3.2",
     "@types/jest": "^29.5.3",
     "@types/node": "^20.4.4",
     "@types/node-cron": "^3.0.8",
@@ -20,9 +21,14 @@
     "build": "tsc --project tsconfig.json",
     "test": "jest"
   },
+  "pkg": {
+    "assets": [
+      "node_modules/axios/dist/node/axios.cjs"
+    ]
+  },
   "dependencies": {
     "@types/axios": "^0.14.0",
-    "adm-zip": "^0.5.10",
+    "archiver": "^5.3.1",
     "axios": "^1.4.0",
     "dayjs": "^1.11.9",
     "googleapis": "^122.0.0",
