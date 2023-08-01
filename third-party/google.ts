@@ -162,7 +162,6 @@ export class GoogleDrive {
         },
       })
       .catch(async (error) => {
-        console.log(error)
         if (error?.response?.status === 308) {
           console.log(`Uploaded bytes ${startByte}-${endByte} of ${filesize}`)
           // Server is requesting to continue the upload, adjust the range for the next chunk
