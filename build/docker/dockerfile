@@ -18,10 +18,15 @@ RUN pkg . --targets node18-alpine-x64 -o ./.bin/backuper
 
 FROM alpine:3.18
 
+RUN apk add --no-cache libstdc++
+
 ENV NODE_ENV=production
 
 WORKDIR /app
 
+ENV SQLITE_FILENAME=/app/database/db.sqlite3
+
 COPY --from=builder /app/.bin/backuper /usr/local/bin/backuper
+COPY --from=builder /app/database /app/database
 
 ENTRYPOINT ["backuper"]

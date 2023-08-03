@@ -8,6 +8,13 @@ import {
   GoogleDrive,
   GoogleServiceAccountInterface,
 } from "./third-party/google"
+import {
+  DeleteUploadData,
+  GetLatestUploadData,
+  InsertUploadData,
+  UpdateUploadData,
+  UploadData,
+} from "./services/upload"
 
 // ** Load ENV Variables
 const {
@@ -22,7 +29,7 @@ const {
   CRON_HOUR = 10,
   CRON_MINUTE = "*",
   TIME_ZONE = "Asia/Jakarta",
-  ONCE = 0,
+  RUN_ONCE = 0,
 } = process.env
 
 if (!GOOGLE_SERVICE_ACCOUNT) {
@@ -48,11 +55,45 @@ const locationDir = path.join(process.cwd(), "exports")
 const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
 const filename = `${locationDir}/${currentTime}`
 
-const run = async () => {
+const resumeTheFailed = async () => {
+  const uploadData = await GetLatestUploadData()
+  if (!uploadData) {
+    return
+  }
+
+  console.log("resuming upload the failed upload")
+
+  const googleDrive = new GoogleDrive(gsa.client_email, gsa.private_key)
+  try {
+    const res = await googleDrive.uploadResumable(
+      uploadData.upload_url,
+      uploadData.filepath,
+      uploadData.filesize,
+      uploadData.rest_start,
+      uploadData.rest_end
+    )
+    UpdateUploadData(uploadData.id!, res)
+    fs.unlink(
+      uploadData.filepath,
+      (err) => err && console.log("Can't delete zip data")
+    )
+  } catch (err) {
+    await DeleteUploadData(uploadData.id!)
+    console.log(`Can't resume ${uploadData.filepath} file`)
+    fs.unlink(
+      uploadData.filepath,
+      (err) => err && console.log("Can't delete zip data")
+    )
+    throw err
+  }
+
+  console.log("successfully resume upload data")
+}
+
+const runBackup = async () => {
   console.log("Backuper is start working!")
   // ** Get an exports file
   let filenameSql: string
-
   try {
     filenameSql = await backupMysql(
       filename,
@@ -89,29 +130,42 @@ const run = async () => {
 
   // ** Upload to Google Drive
   const googleDrive = new GoogleDrive(gsa.client_email, gsa.private_key)
+  let uploadInfo: UploadData
   try {
-    await googleDrive.resumable(
+    uploadInfo = await googleDrive.resumable(
       `${PREFIX_FILENAME} ${currentTime}.zip`,
       filenameZip,
       [GOOGLE_FILE_SHARE_ID]
     )
-    fs.unlink(filenameZip, (err) => err && console.log("Can't delete zip data"))
+    if (uploadInfo.status)
+      fs.unlink(
+        filenameZip,
+        (err) => err && console.log("Can't delete zip data")
+      )
   } catch (err) {
     console.log(`Can't Upload ${filenameZip} file`)
     fs.unlink(filenameZip, (err) => err && console.log("Can't delete zip data"))
     throw err
   }
 
+  // ** Insert upload info to Database
+  await InsertUploadData(uploadInfo)
+
   console.log("The program has runned successfully!")
 }
 
-console.log(`Scheduling tasks at ${CRON_HOUR}:${CRON_MINUTE}`)
+const run = () => {
+  resumeTheFailed()
+  runBackup()
+}
 
-if (ONCE) run()
-else
+if (RUN_ONCE) run()
+else {
+  console.log(`Scheduling tasks at ${CRON_HOUR}:${CRON_MINUTE}`)
   cron
     .schedule(`${CRON_MINUTE} ${CRON_HOUR} * * *`, run, {
       scheduled: true,
       timezone: TIME_ZONE,
     })
     .start()
+}
