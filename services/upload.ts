@@ -2,13 +2,14 @@ import { tables, db } from "../database/knexfile"
 
 export interface UploadData {
   id?: number
+  file_id: string | null
   upload_url: string
   filepath: string
   filesize: number
   rest_start: number
   rest_end?: number
   status: boolean
-  created_at?: Date
+  created_at?: string
 }
 
 const InsertUploadData = async (data: UploadData) =>
@@ -31,8 +32,11 @@ const UpdateUploadData = async (id: number, data: UploadData) =>
 const DeleteUploadData = async (id: number) =>
   await db(tables.upload).where("id", id).del()
 
-const DeleteUploadAfter5Days = async () =>
-  await db(tables.upload).whereRaw(`Date('now') - created_at > 5`).del()
+const SelectUploadAfter5Days = async () =>
+  await db(tables.upload)
+    .whereRaw(`ROUND(JULIANDAY('now') - JULIANDAY(created_at)) > 5`)
+    .select<UploadData>("*")
+    .first()
 
 export {
   InsertUploadData,
@@ -40,5 +44,5 @@ export {
   GetLatestUploadData,
   UpdateUploadData,
   DeleteUploadData,
-  DeleteUploadAfter5Days,
+  SelectUploadAfter5Days,
 }

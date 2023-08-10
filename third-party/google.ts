@@ -133,6 +133,23 @@ export class GoogleDrive {
     return res.headers.location
   }
 
+  private async checkResumableStatus(
+    filesize: number,
+    uploadURL: string
+  ): Promise<drive_v3.Schema$File> {
+    return await axios
+      .put(uploadURL, {
+        "Content-Range": `bytes ${filesize}`,
+      })
+      .then((res) => res.data as drive_v3.Schema$File)
+      .catch((err) => {
+        console.error(err.message)
+        return {
+          id: "",
+        }
+      })
+  }
+
   async uploadResumable(
     uploadURL: string,
     filepath: string,
@@ -162,14 +179,23 @@ export class GoogleDrive {
           "Content-Range": `bytes ${startByte}-${endByte}/${filesize}`,
         },
       })
-      .then(() => ({
-        upload_url: uploadURL,
-        filepath,
-        filesize,
-        rest_start: 0,
-        rest_end: 0,
-        status: true,
-      }))
+      .then(async (res) => {
+        let id = res.data?.id
+        if (!id) {
+          const data = await this.checkResumableStatus(filesize, uploadURL)
+          id = data.id || null
+        }
+
+        return {
+          file_id: id,
+          upload_url: uploadURL,
+          filepath,
+          filesize,
+          rest_start: 0,
+          rest_end: 0,
+          status: true,
+        }
+      })
       .catch(async (error) => {
         if (error?.response?.status === 308) {
           console.log(`Uploaded bytes ${startByte}-${endByte} of ${filesize}`)
@@ -189,6 +215,7 @@ export class GoogleDrive {
 
         console.error("Error uploading chunk:", error.message)
         return {
+          file_id: null,
           upload_url: uploadURL,
           filepath,
           filesize,
@@ -211,5 +238,21 @@ export class GoogleDrive {
     let startByte = 0
 
     return await this.uploadResumable(uploadURL, filepath, filesize, startByte)
+  }
+
+  async deleteFile(id: string) {
+    const drive = google.drive({
+      version: "v3",
+      auth: this.client,
+    })
+    const res = await drive.files.delete({
+      fileId: id,
+    })
+
+    return {
+      statusCode: res.status,
+      message: res.statusText,
+      data: res.data,
+    }
   }
 }

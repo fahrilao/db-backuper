@@ -9,6 +9,7 @@ import {
   GoogleServiceAccountInterface,
 } from "./third-party/google"
 import {
+  SelectUploadAfter5Days,
   DeleteUploadData,
   GetLatestUploadData,
   InsertUploadData,
@@ -52,8 +53,22 @@ const gsa: GoogleServiceAccountInterface = JSON.parse(
   atob(GOOGLE_SERVICE_ACCOUNT)
 )
 const locationDir = path.join(process.cwd(), "exports")
-const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
-const filename = `${locationDir}/${currentTime}`
+
+const deleteExpireData = async () => {
+  const uploadData = await SelectUploadAfter5Days()
+  if (!uploadData) return
+
+  const googleDrive = new GoogleDrive(gsa.client_email, gsa.private_key)
+  try {
+    uploadData.file_id && (await googleDrive.deleteFile(uploadData.file_id))
+    await DeleteUploadData(uploadData.id!)
+  } catch (err) {
+    console.log(`Can't resume ${uploadData.filepath} file`)
+    throw err
+  }
+
+  console.log("Success deleted expire upload data")
+}
 
 const resumeTheFailed = async () => {
   const uploadData = await GetLatestUploadData()
@@ -92,6 +107,8 @@ const resumeTheFailed = async () => {
 
 const runBackup = async () => {
   console.log("Backuper is start working!")
+  const currentTime = dayjs().format("DD-MM-YYYY HH.mm.ss")
+  const filename = `${locationDir}/${currentTime}`
   // ** Get an exports file
   let filenameSql: string
   try {
@@ -149,12 +166,16 @@ const runBackup = async () => {
   }
 
   // ** Insert upload info to Database
-  await InsertUploadData(uploadInfo)
+  await InsertUploadData({
+    ...uploadInfo,
+    created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+  })
 
   console.log("The program has runned successfully!")
 }
 
 const run = () => {
+  deleteExpireData()
   resumeTheFailed()
   runBackup()
 }
